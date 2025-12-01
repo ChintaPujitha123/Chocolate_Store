@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin - Chocolate Store</title>
+<link rel="stylesheet" href="style.css"/>
+
+<script>
+    // Redirect if not logged in
+    if (localStorage.getItem("adminLoggedIn") !== "true") {
+        window.location.href = "login.html";
+    }
+</script>
+
+<style>
+.admin-container {
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.product-list-admin {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.product-card-admin {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+}
+.product-card-admin img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 6px;
+}
+.form-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 8px;
+}
+.preview img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 6px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="header-container">
+    <img src="logo.png" alt="Logo" style="height:60px;">
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="contact.html">Contact</a>
+      <a href="login.html">Admin</a>
+      <a href="cart.html">Cart</a>
+    </nav>
+  </div>
+  <div class="title-section">
+    <h1>Admin Panel</h1>
+  </div>
+</header>
+
+<div class="admin-container">
+
+  <!-- Default images -->
+  <label>Select Image From Folder:</label>
+  <select id="imageSelect">
+    <option value="">-- Choose Image --</option>
+    <option value="images/chocolate1.jpg">milk.jpg</option>
+    <option value="images/chocolate2.jpg">dark.jpg</option>
+    <option value="images/chocolate3.jpg">white.jpg</option>
+    <option value="images/chocolate4.jpg">hazelnut.jpg</option>
+    <option value="images/chocolate5.jpg">caramel.jpg</option>
+    <option value="images/chocolate6.jpg">almond.jpg</option>
+    <option value="images/chocolate7.jpg">mint.jpg</option>
+    <option value="images/chocolate8.jpg">strawberry.jpg</option>
+    <option value="images/chocolate9.jpg">orange.jpg</option>
+    <option value="images/chocolate10.jpg">coffee.jpg</option>
+  </select>
+
+  <form id="adminForm">
+    <div class="form-row">
+      <input type="text" id="chocoName" placeholder="Chocolate Name" required>
+      <input type="text" id="chocoPrice" placeholder="Price (₹)" required>
+    </div>
+
+    <!-- File Upload -->
+    <div class="form-row">
+      <label>Upload Image
+        <input type="file" id="chocoFile" accept="images/*">
+      </label>
+    </div>
+
+    <input type="hidden" id="chocoImg">
+
+    <div class="preview" id="imgPreview" style="display:none;">
+      <strong>Preview:</strong>
+      <img id="previewImg" src="">
+    </div>
+
+    <button type="submit">Add Chocolate</button>
+
+  </form>
+
+  <h3>Existing Chocolates:</h3>
+  <div id="adminList"></div>
+
+</div>
+
+<script>
+// Preview File Image
+document.getElementById("chocoFile").addEventListener("change", function(){
+    const file = this.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e){
+        document.getElementById("chocoImg").value = e.target.result;
+        previewImg.src = e.target.result;
+        imgPreview.style.display = "flex";
+    };
+    reader.readAsDataURL(file);
+});
+
+// Select Image From Folder
+document.getElementById("imageSelect").addEventListener("change", function(){
+    if (this.value !== "") {
+        document.getElementById("chocoImg").value = this.value;
+        previewImg.src = this.value;
+        imgPreview.style.display = "flex";
+    }
+});
+
+// SUBMIT to BACKEND
+adminForm.addEventListener("submit", async function(e){
+    e.preventDefault();
+
+    const name = chocoName.value.trim();
+    const price = chocoPrice.value.trim();
+    const img = chocoImg.value.trim();
+
+    if (!img) return alert("Select or upload an image!");
+
+    const res = await fetch("http://localhost:3000/api/chocolates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, price, img })
+    });
+
+    if (res.ok) {
+        alert("Chocolate added!");
+        loadAdminChocolates();
+        adminForm.reset();
+        imgPreview.style.display = "none";
+    } else {
+        alert("Failed to add!");
+    }
+});
+
+// LOAD EXISTING
+async function loadAdminChocolates(){
+    const res = await fetch("http://localhost:3000/api/chocolates");
+    const list = await res.json();
+
+    adminList.innerHTML = list.map(choco => `
+        <div class="product-card-admin">
+            <img src="${choco.img}">
+            <strong>${choco.name}</strong>
+            <span>${choco.price}</span>
+        </div>
+    `).join("");
+}
+
+loadAdminChocolates();
+</script>
+
+</body>
+</html>
